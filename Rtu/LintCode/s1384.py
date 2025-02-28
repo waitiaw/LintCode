@@ -1,42 +1,53 @@
-def minMergeCost(stones, left, right):
-    n = len(stones)
+class Solution:
+    def getMinimumCost(self, n, left, right, weight):
+        self.left = left
+        self.right = right
+        self.n = n
+        self.dp = [[[-2 for _ in range(right + 1)] for _ in range(n)] for _ in range(n)]
+        self.sum = [0] * n
+        for i in range(n):
+            self.sum[i] = (self.sum[i - 1] if i > 0 else 0) + weight[i]
 
-    # 돌 더미가 하나라면 비용은 0
-    if n == 1:
-        return 0
+        # Start DFS to compute the result
+        self.dfs(0, n - 1, 1)
 
-    # 누적합을 구하여 구간 합을 빠르게 계산
-    prefix_sum = [0] * (n + 1)
-    for i in range(n):
-        prefix_sum[i + 1] = prefix_sum[i] + stones[i]
+        if self.dp[0][n - 1][1] <= -1:
+            return 0
+        return self.dp[0][n - 1][1]
 
-    # dp[i][j]는 i번째 돌부터 j번째 돌까지 합쳤을 때 최소 비용
-    dp = [[float('inf')] * n for _ in range(n)]
+    def dfs(self, s, e, k):
+        if self.dp[s][e][k] >= -1:
+            return self.dp[s][e][k]
 
-    # 길이가 1인 구간은 비용이 0
-    for i in range(n):
-        dp[i][i] = 0
+        if e - s + 1 < k:
+            self.dp[s][e][k] = -1
+        elif s == e:
+            self.dp[s][e][k] = 0
+        else:
+            self.dp[s][e][k] = float('inf')
 
-    # 구간 길이가 2 이상일 때 합병 비용 계산
-    for length in range(2, n + 1):  # 구간의 길이
-        for i in range(n - length + 1):
-            j = i + length - 1
-            # [i, j] 구간을 합칠 때, 중간 점을 기준으로 분할
-            for k in range(i, j):
-                # [i, j] 구간의 합은
-                total_cost = prefix_sum[j + 1] - prefix_sum[i]
-                # 합병 비용이 left와 right 사이일 때만 유효
-                if left <= total_cost <= right:
-                    dp[i][j] = min(dp[i][j], dp[i][k] + dp[k + 1][j] + total_cost)
+            if k == 1:
+                m = min(self.right, e - s + 1)
+                for i in range(self.left, m + 1):
+                    v = self.dfs(s, e, i)
+                    if v != -1:
+                        self.dp[s][e][k] = min(self.dp[s][e][k], v)
+                if self.dp[s][e][k] != float('inf'):
+                    self.dp[s][e][k] += self.sum[e] - (self.sum[s - 1] if s > 0 else 0)
+                else:
+                    self.dp[s][e][k] = -1
+            else:
+                for i in range(s + 1, e + 1):
+                    v1 = self.dfs(s, i - 1, k - 1)
+                    v2 = self.dfs(i, e, 1)
+                    if v1 != -1 and v2 != -1:
+                        self.dp[s][e][k] = min(self.dp[s][e][k], v1 + v2)
 
-    # 전체 구간을 합쳤을 때의 최소 비용
-    return dp[0][n - 1] if dp[0][n - 1] != float('inf') else 0
+        return self.dp[s][e][k]
 
-
-# 예시 실행
-stones = [1,2,3]  # 돌 더미 크기
-left = 2        # 합병 비용 최소 범위
-right = 3             # 합병 비용 최대 범위
-
-result = minMergeCost(stones, left, right)
-print(result)  # 예상 결과 값 10
+sol = Solution()
+arr = [1,2,3,4,5,6]
+left = 3
+right = 4
+n = 6
+print(sol.getMinimumCost(n,left,right,arr))
